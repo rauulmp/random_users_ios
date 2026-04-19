@@ -11,12 +11,7 @@ import SwiftUI
 struct RandomUsersApp: App {
     var body: some Scene {
         WindowGroup {
-            let client = RandomUsersClientImpl()
-            let repository = UsersRepositoryImpl(client: client)
-            let useCase = FetchUsersUseCaseImpl(repository: repository)
-            let viewModel = UsersViewModel(fetchUsersUseCase: useCase)
-            
-            UserListView(viewModel: viewModel)
+            UserListView(viewModel: DependencyFactory.makeUsersViewModel())
         }
     }
 }

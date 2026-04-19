@@ -115,43 +115,29 @@ struct UserListView: View {
 }
 
 #Preview("User List View - Light Mode") {
-    let mockRepo = MockUserRepository(users: User.previewList)
-    let useCase = FetchUsersUseCaseImpl(repository: mockRepo)
-    let viewModel = UsersViewModel(fetchUsersUseCase: useCase)
-    
+    let viewModel = DependencyFactory.makeMockUsersViewModel(users: User.previewList)
     UserListView(viewModel: viewModel)
 }
 
 #Preview("User List View - Empty - Light Mode") {
-    let mockRepo = MockUserRepository()
-    let useCase = FetchUsersUseCaseImpl(repository: mockRepo)
-    let viewModel = UsersViewModel(fetchUsersUseCase: useCase)
-    
+    let viewModel = DependencyFactory.makeMockUsersViewModel()
     UserListView(viewModel: viewModel)
 }
 
 #Preview("User List View - Error - Light Mode") {
-    let mockRepo = MockUserRepository(errorToThrow: NetworkError.noConnection)
-    let useCase = FetchUsersUseCaseImpl(repository: mockRepo)
-    let viewModel = UsersViewModel(fetchUsersUseCase: useCase)
-    
+    let viewModel = DependencyFactory.makeMockUsersViewModel(error: NetworkError.noConnection)
     UserListView(viewModel: viewModel)
 }
 
 #Preview("User List View - Pagination Error - Light Mode") {
-    let mockRepo = MockUserRepository(users: User.previewList)
-    let useCase = FetchUsersUseCaseImpl(repository: mockRepo)
-    let viewModel = UsersViewModel(fetchUsersUseCase: useCase)
+    let viewModel = DependencyFactory.makeMockUsersViewModel(users: User.previewList)
     viewModel.state = .success(users: User.previewList)
     viewModel.paginationError = "Failed to load more users."
     return UserListView(viewModel: viewModel)
 }
 
 #Preview("User List View - Dark Mode") {
-    let mockRepo = MockUserRepository(users: User.previewList)
-    let useCase = FetchUsersUseCaseImpl(repository: mockRepo)
-    let viewModel = UsersViewModel(fetchUsersUseCase: useCase)
-    
+    let viewModel = DependencyFactory.makeMockUsersViewModel(users: User.previewList)
     UserListView(viewModel: viewModel)
         .preferredColorScheme(.dark)
 }

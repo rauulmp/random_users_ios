@@ -6,12 +6,12 @@
 //
 
 enum Endpoint {
-    case users(page: Int, numResults: Int)
+    case users(page: Int, numResults: Int, seed: String)
     
     var path: String {
     switch self {
-        case let .users(page, numResults):
-            return "/api/?results=\(numResults)&page=\(page)"
+        case let .users(page, numResults, seed):
+            return "/api/?results=\(numResults)&page=\(page)&seed=\(seed)"
         }
     }
 }

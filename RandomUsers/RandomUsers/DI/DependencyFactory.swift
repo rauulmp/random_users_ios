@@ -5,6 +5,8 @@
 //  Created by Raul Montoya Perez on 19/4/26.
 //
 
+import Foundation
+
 struct DependencyFactory {
     static func makeUsersViewModel() -> UsersViewModel {
         let client = RandomUsersClientImpl()
@@ -15,9 +17,11 @@ struct DependencyFactory {
     
     static func makeMockUsersViewModel(
         users: [User] = [],
-        error: NetworkError? = nil
+        pageSize: Int = 10,
+        errorsByPage: [Int: Error] = [:],
+        delay: TimeInterval = 0
     ) -> UsersViewModel {
-        let mockRepo = MockUserRepository(users: users, errorToThrow: error)
+        let mockRepo = MockUserRepository(users: users, pageSize: pageSize, errorsByPage: errorsByPage, delay: delay)
         let useCase = FetchUsersUseCaseImpl(repository: mockRepo)
         return UsersViewModel(fetchUsersUseCase: useCase)
     }

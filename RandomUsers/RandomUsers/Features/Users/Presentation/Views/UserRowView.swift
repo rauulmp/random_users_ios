@@ -42,7 +42,7 @@ struct UserRowView: View {
                     .lineLimit(1)
                 
                 Text(user.phone)
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundColor(.accentColor)
             }
             

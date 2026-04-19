@@ -34,7 +34,7 @@ class UsersViewModel {
         
         do {
             let newUsers = try await fetchUsersUseCase.execute(page: currentPage)
-            state = .success(users: newUsers)
+            state = .success(users: [].appendingUnique(contentsOf: newUsers))
         } catch (let error) {
             state = .error((error as? NetworkError)?.desc ?? "Unknown error")
         }
@@ -67,7 +67,7 @@ class UsersViewModel {
             }
             
             currentPage += 1
-            state = .success(users: users + newUsers)
+            state = .success(users: users.appendingUnique(contentsOf: newUsers))
         } catch (let error) {
             state = .success(users: users)
             paginationError = (error as? NetworkError)?.desc ?? "Unknown error"

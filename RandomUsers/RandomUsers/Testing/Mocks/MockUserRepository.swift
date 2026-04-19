@@ -10,24 +10,26 @@ import Foundation
 class MockUserRepository: UsersRepository {
     private let users: [User]
     private let pageSize: Int
-    var errorToThrow: Error?
+    private let errorsByPage: [Int: Error]
     var delay: TimeInterval
+    private(set) var callCount = 0
     
     init(users: [User] = [],
          pageSize: Int = 10,
-         errorToThrow: Error? = nil,
+         errorsByPage: [Int: Error] = [:],
          delay: TimeInterval = 0.5) {
         
         self.users = users
         self.pageSize = pageSize
-        self.errorToThrow = errorToThrow
+        self.errorsByPage = errorsByPage
         self.delay = delay
     }
     
     func fetchUsers(page: Int) async throws -> [User] {
+        callCount += 1
         try await Task.sleep(for: .seconds(delay))
         
-        if let error = errorToThrow {
+        if let error = errorsByPage[page] {
             throw error
         }
         

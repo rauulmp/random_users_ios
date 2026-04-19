@@ -125,7 +125,7 @@ struct UserListView: View {
 }
 
 #Preview("User List View - Error - Light Mode") {
-    let viewModel = DependencyFactory.makeMockUsersViewModel(error: NetworkError.noConnection)
+    let viewModel = DependencyFactory.makeMockUsersViewModel(errorsByPage: [1: NetworkError.noConnection], delay: 0.5)
     UserListView(viewModel: viewModel)
 }
 

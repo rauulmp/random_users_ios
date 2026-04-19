@@ -122,4 +122,61 @@ struct UsersViewModelTests {
             Issue.record("Expected success state with appended data")
         }
     }
+    
+    @Test("Filtering by name returns correct user")
+    func testFilterByName() async {
+        // Given
+        let allUsers = [User.mock(name: "Alex Martinez"), User.mock(name: "Raul Alonso")]
+        let sut = DependencyFactory.makeMockUsersViewModel(users: allUsers)
+        await sut.fetchUsers()
+        
+        // When
+        sut.searchText = "Alex"
+        
+        // Then
+        #expect(sut.filteredUsers.count == 1)
+        #expect(sut.filteredUsers.first?.name == "Alex Martinez")
+    }
+
+    @Test("Filtering is case insensitive")
+    func testFilterCaseInsensitive() async {
+        // Given
+        let sut = DependencyFactory.makeMockUsersViewModel(users: [User.mock(name: "Alex Martinez")])
+        await sut.fetchUsers()
+        
+        // When
+        sut.searchText = "alex"
+        
+        // Then
+        #expect(sut.filteredUsers.count == 1)
+        #expect(sut.filteredUsers.first?.name == "Alex Martinez")
+    }
+
+    @Test("Filtering by email returns correct user")
+    func testFilterByEmail() async {
+        // Given
+        let sut = DependencyFactory.makeMockUsersViewModel(users: [User.mock(email: "alex@test.com")])
+        await sut.fetchUsers()
+        
+        // When
+        sut.searchText = "alex@test"
+        
+        // Then
+        #expect(sut.filteredUsers.count == 1)
+        #expect(sut.filteredUsers.first?.email == "alex@test.com")
+    }
+
+    @Test("Filtering with no match returns empty list")
+    func testFilterNoResults() async {
+        // Given
+        let user = User.mock(name: "Alex", email: "alex@test.com")
+        let sut = DependencyFactory.makeMockUsersViewModel(users: [user])
+        await sut.fetchUsers()
+        
+        // When
+        sut.searchText = "NonExistentUser"
+        
+        // Then
+        #expect(sut.filteredUsers.isEmpty)
+    }
 }

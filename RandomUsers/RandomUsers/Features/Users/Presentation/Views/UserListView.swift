@@ -18,17 +18,23 @@ struct UserListView: View {
                 case .loading:
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                case .success(let users):
-                    if users.isEmpty {
-                        emptyStateView
+                case .success:
+                    if viewModel.filteredUsers.isEmpty && viewModel.searchText.isEmpty {
+                         emptyStateView
+                    } else if viewModel.filteredUsers.isEmpty {
+                        ContentUnavailableView.search(text: viewModel.searchText)
                     } else {
-                        listView(users: users)
+                        listView(users: viewModel.filteredUsers)
                     }
                 case .error(let message):
                     errorView(message: message)
                 }
             }
             .navigationTitle("Users")
+            .searchable(text: $viewModel.searchText,
+                        placement: .navigationBarDrawer(displayMode: .always),
+                        prompt: "Search by name or email"
+            )
             .navigationDestination(for: User.self) { user in
                 UserDetailView(user: user)
             }
@@ -74,7 +80,7 @@ struct UserListView: View {
                 }
             }
             
-            if viewModel.hasMoreResults {
+            if viewModel.hasMoreResults && viewModel.searchText.isEmpty {
                 VStack(spacing: 0) {
                     Color.clear
                         .frame(height: 1)

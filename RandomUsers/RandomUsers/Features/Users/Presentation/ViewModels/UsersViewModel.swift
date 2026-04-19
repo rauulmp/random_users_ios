@@ -16,6 +16,17 @@ class UsersViewModel {
     var paginationError: String?
     var hasMoreResults = true
     private var currentPage = 1
+    var searchText: String = ""
+    
+    var filteredUsers: [User] {
+        guard case .success(let users) = state else { return [] }
+        guard !searchText.isEmpty else { return users }
+        
+        return users.filter { user in
+            user.name.localizedCaseInsensitiveContains(searchText) ||
+            user.email.localizedCaseInsensitiveContains(searchText)
+        }
+    }
     
     private let fetchUsersUseCase: FetchUsersUseCase
     
@@ -49,7 +60,11 @@ class UsersViewModel {
             paginationError = nil
         }
         
-        guard case .success(let users) = state, !isPaginating, paginationError == nil, hasMoreResults else {
+        guard case .success(let users) = state,
+                !isPaginating,
+                paginationError == nil,
+                hasMoreResults,
+                searchText.isEmpty else {
             return
         }
 

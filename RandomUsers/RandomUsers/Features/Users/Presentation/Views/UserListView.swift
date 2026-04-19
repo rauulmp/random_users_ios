@@ -14,32 +14,144 @@ struct UserListView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if viewModel.isLoading {
+                switch viewModel.state {
+                case .loading:
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
-                else {
-                    List(viewModel.userList) { user in
-                        NavigationLink{
-                            UserDetailView(user: user)
-                        } label: {
-                            UserRowView(user: user)
-                        }
+                case .success(let users):
+                    if users.isEmpty {
+                        emptyStateView
+                    } else {
+                        listView(users: users)
                     }
+                case .error(let message):
+                    errorView(message: message)
                 }
             }
             .navigationTitle("Users")
+            .navigationDestination(for: User.self) { user in
+                UserDetailView(user: user)
+            }
             .task {
                 await viewModel.fetchUsers()
             }
         }
     }
+    
+    private var emptyStateView: some View {
+        ContentUnavailableView {
+            Label("No Users Found", systemImage: "person.slash")
+        } description: {
+            Text("There are no users to display at the moment.")
+        } actions: {
+            Button("Retry") {
+                Task { await viewModel.refreshUsers() }
+            }
+            .buttonStyle(.borderedProminent)
+        }
+    }
+    
+    private func errorView(message: String) -> some View {
+        ContentUnavailableView {
+            Label("Error", systemImage: "exclamationmark.triangle")
+        } description: {
+            Text(message)
+        } actions: {
+            Button("Retry") {
+                Task {
+                    await viewModel.refreshUsers()
+                }
+            }
+            .buttonStyle(.borderedProminent)
+        }
+    }
+    
+    private func listView(users: [User]) -> some View {
+        List{
+            ForEach(users) { user in
+                NavigationLink(value: user) {
+                    UserRowView(user: user)
+                }
+            }
+            
+            if viewModel.hasMoreResults {
+                VStack(spacing: 0) {
+                    Color.clear
+                        .frame(height: 1)
+                        .onAppear {
+                            Task {
+                                await viewModel.fetchNewPage()
+                            }
+                        }
+                    
+                    if viewModel.isPaginating {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                    }
+                    
+                    if let error = viewModel.paginationError {
+                        VStack(spacing: 8) {
+                            Text(error)
+                                .font(.footnote)
+                                .foregroundStyle(.red)
+                                .multilineTextAlignment(.center)
+                            
+                            Button("Retry") {
+                                Task {
+                                    await viewModel.forceToFetchNewPage()
+                                }
+                            }
+                            .font(.footnote)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+            }
+        }
+        .refreshable {
+            await viewModel.refreshUsers()
+        }
+    }
 }
 
-#Preview {
+#Preview("User List View - Light Mode") {
     let mockRepo = MockUserRepository(users: User.previewList)
     let useCase = FetchUsersUseCaseImpl(repository: mockRepo)
     let viewModel = UsersViewModel(fetchUsersUseCase: useCase)
     
     UserListView(viewModel: viewModel)
+}
+
+#Preview("User List View - Empty - Light Mode") {
+    let mockRepo = MockUserRepository()
+    let useCase = FetchUsersUseCaseImpl(repository: mockRepo)
+    let viewModel = UsersViewModel(fetchUsersUseCase: useCase)
+    
+    UserListView(viewModel: viewModel)
+}
+
+#Preview("User List View - Error - Light Mode") {
+    let mockRepo = MockUserRepository(errorToThrow: NetworkError.noConnection)
+    let useCase = FetchUsersUseCaseImpl(repository: mockRepo)
+    let viewModel = UsersViewModel(fetchUsersUseCase: useCase)
+    
+    UserListView(viewModel: viewModel)
+}
+
+#Preview("User List View - Pagination Error - Light Mode") {
+    let mockRepo = MockUserRepository(users: User.previewList)
+    let useCase = FetchUsersUseCaseImpl(repository: mockRepo)
+    let viewModel = UsersViewModel(fetchUsersUseCase: useCase)
+    viewModel.state = .success(users: User.previewList)
+    viewModel.paginationError = "Failed to load more users."
+    return UserListView(viewModel: viewModel)
+}
+
+#Preview("User List View - Dark Mode") {
+    let mockRepo = MockUserRepository(users: User.previewList)
+    let useCase = FetchUsersUseCaseImpl(repository: mockRepo)
+    let viewModel = UsersViewModel(fetchUsersUseCase: useCase)
+    
+    UserListView(viewModel: viewModel)
+        .preferredColorScheme(.dark)
 }

@@ -11,9 +11,11 @@ import Foundation
 @MainActor
 class UsersViewModel {
     
-    var userList: [User] = []
-    var isLoading = false
-    var errorMessage: String?
+    var state: UsersViewState = .loading
+    var isPaginating = false
+    var paginationError: String?
+    var hasMoreResults = true
+    private var currentPage = 1
     
     private let fetchUsersUseCase: FetchUsersUseCase
     
@@ -21,16 +23,58 @@ class UsersViewModel {
         self.fetchUsersUseCase = fetchUsersUseCase
     }
     
-    func fetchUsers() async {
-        isLoading = true
-        errorMessage = nil
+    func fetchUsers(force: Bool = false) async {
+        if !force, case .success = state { return }
+        
+        state = .loading
+        isPaginating = false
+        paginationError = nil
+        currentPage = 1
+        hasMoreResults = true
         
         do {
-            userList = try await fetchUsersUseCase.execute(page: 1)
-        } catch (let error){
-            errorMessage = (error as? NetworkError)?.desc
+            let newUsers = try await fetchUsersUseCase.execute(page: currentPage)
+            state = .success(users: newUsers)
+        } catch (let error) {
+            state = .error((error as? NetworkError)?.desc ?? "Unknown error")
         }
-        isLoading = false
     }
     
+    func refreshUsers() async {
+        await fetchUsers(force: true)
+    }
+    
+    func fetchNewPage(force: Bool = false) async {
+        if force {
+            paginationError = nil
+        }
+        
+        guard case .success(let users) = state, !isPaginating, paginationError == nil, hasMoreResults else {
+            return
+        }
+
+        isPaginating = true
+        
+        defer {
+            isPaginating = false
+        }
+        
+        do {
+            let newUsers = try await fetchUsersUseCase.execute(page: currentPage + 1)
+            guard !newUsers.isEmpty else {
+                hasMoreResults = false
+                return
+            }
+            
+            currentPage += 1
+            state = .success(users: users + newUsers)
+        } catch (let error) {
+            state = .success(users: users)
+            paginationError = (error as? NetworkError)?.desc ?? "Unknown error"
+        }
+    }
+    
+    func forceToFetchNewPage() async {
+        await fetchNewPage(force: true)
+    }
 }

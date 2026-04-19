@@ -34,10 +34,12 @@ class UsersViewModel {
         self.fetchUsersUseCase = fetchUsersUseCase
     }
     
-    func fetchUsers(force: Bool = false) async {
+    func fetchUsers(force: Bool = false, showLoading: Bool = true) async {
         if !force, case .success = state { return }
         
-        state = .loading
+        if showLoading {
+            state = .loading
+        }
         isPaginating = false
         paginationError = nil
         currentPage = 1
@@ -51,8 +53,12 @@ class UsersViewModel {
         }
     }
     
-    func refreshUsers() async {
+    func retryFetchUsers() async {
         await fetchUsers(force: true)
+    }
+    
+    func refreshUsers() async {
+        await fetchUsers(force: true, showLoading: false)
     }
     
     func fetchNewPage(force: Bool = false) async {

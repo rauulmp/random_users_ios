@@ -51,7 +51,7 @@ struct UserListView: View {
             Text("There are no users to display at the moment.")
         } actions: {
             Button("Retry") {
-                Task { await viewModel.refreshUsers() }
+                Task { await viewModel.retryFetchUsers() }
             }
             .buttonStyle(.borderedProminent)
         }
@@ -65,7 +65,7 @@ struct UserListView: View {
         } actions: {
             Button("Retry") {
                 Task {
-                    await viewModel.refreshUsers()
+                    await viewModel.retryFetchUsers()
                 }
             }
             .buttonStyle(.borderedProminent)

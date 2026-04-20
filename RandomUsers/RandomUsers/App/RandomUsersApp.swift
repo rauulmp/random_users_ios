@@ -9,9 +9,13 @@ import SwiftUI
 
 @main
 struct RandomUsersApp: App {
+
+    let container = AppContainer()
+
     var body: some Scene {
         WindowGroup {
-            UserListView(viewModel: DependencyFactory.makeUsersViewModel())
+            UserListView(viewModel: container.makeUsersViewModel(),
+                         factory: container)
         }
     }
 }

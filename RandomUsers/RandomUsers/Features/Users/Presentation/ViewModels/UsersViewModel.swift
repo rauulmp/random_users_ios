@@ -20,17 +20,22 @@ class UsersViewModel {
     
     var filteredUsers: [User] {
         guard case .success(let users) = state else { return [] }
-        guard !searchText.isEmpty else { return users }
         
-        return users.filter { user in
+        let blockedIds = Set(blacklistStore.users.map { $0.id })
+        let activeUsers = users.filter { !blockedIds.contains($0.id) }
+        guard !searchText.isEmpty else { return activeUsers }
+        
+        return activeUsers.filter { user in
             user.name.localizedCaseInsensitiveContains(searchText) ||
             user.email.localizedCaseInsensitiveContains(searchText)
         }
     }
     
+    private let blacklistStore: BlacklistStore
     private let fetchUsersUseCase: FetchUsersUseCase
     
-    init(fetchUsersUseCase: FetchUsersUseCase) {
+    init(blacklistStore: BlacklistStore, fetchUsersUseCase: FetchUsersUseCase) {
+        self.blacklistStore = blacklistStore
         self.fetchUsersUseCase = fetchUsersUseCase
     }
     
@@ -97,5 +102,13 @@ class UsersViewModel {
     
     func forceToFetchNewPage() async {
         await fetchNewPage(force: true)
+    }
+    
+    func deleteUser(at offsets: IndexSet) {
+        let usersToDelete = offsets.map { filteredUsers[$0] }
+        
+        for user in usersToDelete {
+            blacklistStore.add(user)
+        }
     }
 }

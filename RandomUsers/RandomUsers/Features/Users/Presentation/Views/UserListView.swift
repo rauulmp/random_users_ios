@@ -10,6 +10,7 @@ import SwiftUI
 struct UserListView: View {
     
     @State var viewModel: UsersViewModel
+    let factory: DependencyFactory
     
     var body: some View {
         NavigationStack {
@@ -35,8 +36,20 @@ struct UserListView: View {
                         placement: .navigationBarDrawer(displayMode: .always),
                         prompt: "Search by name or email"
             )
-            .navigationDestination(for: User.self) { user in
-                UserDetailView(user: user)
+            .navigationDestination(for: AppRoute.self) { route in
+                switch route {
+                case .userDetail(let user):
+                    UserDetailView(user: user)
+                case .blacklist:
+                    BlacklistView(viewModel: factory.makeBlacklistViewModel())
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    NavigationLink(value: AppRoute.blacklist) {
+                        Image(systemName: "person.badge.minus")
+                    }
+                }
             }
             .task {
                 await viewModel.fetchUsers()
@@ -75,10 +88,11 @@ struct UserListView: View {
     private func listView(users: [User]) -> some View {
         List{
             ForEach(users) { user in
-                NavigationLink(value: user) {
+                NavigationLink(value: AppRoute.userDetail(user)) {
                     UserRowView(user: user)
                 }
             }
+            .onDelete(perform: viewModel.deleteUser)
             
             if viewModel.hasMoreResults && viewModel.searchText.isEmpty {
                 VStack(spacing: 0) {
@@ -121,29 +135,30 @@ struct UserListView: View {
 }
 
 #Preview("User List View - Light Mode") {
-    let viewModel = DependencyFactory.makeMockUsersViewModel(users: User.previewList)
-    UserListView(viewModel: viewModel)
+    let container = PreviewContainer(users: User.previewList)
+    UserListView(viewModel: container.makeUsersViewModel(), factory: container)
 }
 
 #Preview("User List View - Empty - Light Mode") {
-    let viewModel = DependencyFactory.makeMockUsersViewModel()
-    UserListView(viewModel: viewModel)
+    let container = PreviewContainer()
+    UserListView(viewModel: container.makeUsersViewModel(), factory: container)
 }
 
 #Preview("User List View - Error - Light Mode") {
-    let viewModel = DependencyFactory.makeMockUsersViewModel(errorsByPage: [1: NetworkError.noConnection], delay: 0.5)
-    UserListView(viewModel: viewModel)
+    let container = PreviewContainer(errorsByPage: [1: NetworkError.noConnection], delay: 0.5)
+    UserListView(viewModel: container.makeUsersViewModel(), factory: container)
 }
 
 #Preview("User List View - Pagination Error - Light Mode") {
-    let viewModel = DependencyFactory.makeMockUsersViewModel(users: User.previewList)
+    let container = PreviewContainer(users: User.previewList)
+    let viewModel = container.makeUsersViewModel()
     viewModel.state = .success(users: User.previewList)
     viewModel.paginationError = "Failed to load more users."
-    return UserListView(viewModel: viewModel)
+    return UserListView(viewModel: viewModel, factory: container)
 }
 
 #Preview("User List View - Dark Mode") {
-    let viewModel = DependencyFactory.makeMockUsersViewModel(users: User.previewList)
-    UserListView(viewModel: viewModel)
+    let container = PreviewContainer(users: User.previewList)
+    UserListView(viewModel: container.makeUsersViewModel(), factory: container)
         .preferredColorScheme(.dark)
 }

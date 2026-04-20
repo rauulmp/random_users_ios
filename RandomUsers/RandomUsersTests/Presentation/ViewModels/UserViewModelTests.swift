@@ -8,15 +8,16 @@
 import Testing
 @testable import RandomUsers
 
-@MainActor
 @Suite("UsersViewModel State Tests")
+@MainActor
 struct UsersViewModelTests {
     
     @Test("Initial fetch success updates state to success")
     func testFetchUsersSuccess() async {
         // Given
         let testUsers = [User.mock(id: "1"), User.mock(id: "2")]
-        let sut = DependencyFactory.makeMockUsersViewModel(users: testUsers)
+        let container = PreviewContainer(users: testUsers)
+        let sut = container.makeUsersViewModel()
         
         // When
         await sut.fetchUsers()
@@ -32,7 +33,8 @@ struct UsersViewModelTests {
     @Test("Initial fetch failure updates state to error")
     func testFetchUsersError() async {
         // Given
-        let sut = DependencyFactory.makeMockUsersViewModel(errorsByPage: [1: NetworkError.noConnection])
+        let container = PreviewContainer(errorsByPage: [1: NetworkError.noConnection])
+        let sut = container.makeUsersViewModel()
         
         // When
         await sut.fetchUsers()
@@ -48,8 +50,9 @@ struct UsersViewModelTests {
     @Test("Pagination success appends data correctly")
     func testPaginationAppendsData() async {
         // Given
-        let allUsers = [User.mock(id: "1"), User.mock(id: "2")]
-        let sut = DependencyFactory.makeMockUsersViewModel(users: allUsers, pageSize: 1)
+        let testUsers = [User.mock(id: "1"), User.mock(id: "2")]
+        let container = PreviewContainer(users: testUsers, pageSize: 1)
+        let sut = container.makeUsersViewModel()
         
         // When
         await sut.fetchUsers()
@@ -67,7 +70,9 @@ struct UsersViewModelTests {
     @Test("Pagination stops when no more results")
     func testPaginationStopsOnEmpty() async {
         // Given
-        let sut = DependencyFactory.makeMockUsersViewModel(users: [User.mock(id: "1")], pageSize: 10)
+        let testUsers = [User.mock(id: "1")]
+        let container = PreviewContainer(users: testUsers, pageSize: 10)
+        let sut = container.makeUsersViewModel()
         
         // When
         await sut.fetchUsers()
@@ -80,10 +85,11 @@ struct UsersViewModelTests {
     @Test("Pagination error preserves current list")
     func testPaginationFailure() async {
         // Given
-        let allUsers = [User.mock(id: "1"), User.mock(id: "2")]
-        let sut = DependencyFactory.makeMockUsersViewModel(users: allUsers,
-                                                           pageSize: 1,
-                                                           errorsByPage: [2: NetworkError.noConnection])
+        let testUsers = [User.mock(id: "1"), User.mock(id: "2")]
+        let container = PreviewContainer(users: testUsers,
+                                         pageSize: 1,
+                                         errorsByPage: [2: NetworkError.noConnection])
+        let sut = container.makeUsersViewModel()
        
         // When
         await sut.fetchUsers()
@@ -101,10 +107,14 @@ struct UsersViewModelTests {
     @Test("FetchNewPage should ignore concurrent calls when already paginating")
     func testFetchNewPageReentrancy() async {
         // Given
-        let allUsers = [User.mock(id: "1"), User.mock(id: "2"), User.mock(id: "3")]
-        let mockRepo = MockUserRepository(users: allUsers, pageSize: 1, delay: 0.2)
-        let useCase = FetchUsersUseCaseImpl(repository: mockRepo)
-        let sut = UsersViewModel(fetchUsersUseCase: useCase)
+        let testUsers = [User.mock(id: "1"), User.mock(id: "2"), User.mock(id: "3")]
+        let container = PreviewContainer(users: testUsers, pageSize: 1, delay: 0.2)
+        let sut = container.makeUsersViewModel()
+        
+        guard let mockRepo = container.usersRepository as? MockUserRepository else {
+            Issue.record("The repository is not a MockUserRepository")
+            return
+        }
         
         // When
         await sut.fetchUsers()
@@ -126,8 +136,10 @@ struct UsersViewModelTests {
     @Test("Filtering by name returns correct user")
     func testFilterByName() async {
         // Given
-        let allUsers = [User.mock(name: "Alex Martinez"), User.mock(name: "Raul Alonso")]
-        let sut = DependencyFactory.makeMockUsersViewModel(users: allUsers)
+        let testUsers = [User.mock(name: "Alex Martinez", email: "alex@test.com"),
+                         User.mock(name: "Raul Alonso", email: "raul@test.com")]
+        let container = PreviewContainer(users: testUsers)
+        let sut = container.makeUsersViewModel()
         await sut.fetchUsers()
         
         // When
@@ -141,7 +153,10 @@ struct UsersViewModelTests {
     @Test("Filtering is case insensitive")
     func testFilterCaseInsensitive() async {
         // Given
-        let sut = DependencyFactory.makeMockUsersViewModel(users: [User.mock(name: "Alex Martinez")])
+        let testUsers = [User.mock(name: "Alex Martinez", email: "alex@test.com"),
+                         User.mock(name: "Raul Alonso", email: "raul@test.com")]
+        let container = PreviewContainer(users: testUsers)
+        let sut = container.makeUsersViewModel()
         await sut.fetchUsers()
         
         // When
@@ -155,7 +170,10 @@ struct UsersViewModelTests {
     @Test("Filtering by email returns correct user")
     func testFilterByEmail() async {
         // Given
-        let sut = DependencyFactory.makeMockUsersViewModel(users: [User.mock(email: "alex@test.com")])
+        let testUsers = [User.mock(name: "Alex Martinez", email: "alex@test.com"),
+                         User.mock(name: "Raul Alonso", email: "raul@test.com")]
+        let container = PreviewContainer(users: testUsers)
+        let sut = container.makeUsersViewModel()
         await sut.fetchUsers()
         
         // When
@@ -169,8 +187,9 @@ struct UsersViewModelTests {
     @Test("Filtering with no match returns empty list")
     func testFilterNoResults() async {
         // Given
-        let user = User.mock(name: "Alex", email: "alex@test.com")
-        let sut = DependencyFactory.makeMockUsersViewModel(users: [user])
+        let testUsers = [User.mock(name: "Alex", email: "alex@test.com")]
+        let container = PreviewContainer(users: testUsers)
+        let sut = container.makeUsersViewModel()
         await sut.fetchUsers()
         
         // When
@@ -178,5 +197,39 @@ struct UsersViewModelTests {
         
         // Then
         #expect(sut.filteredUsers.isEmpty)
+    }
+    
+    @Test("Filtering resets when search text is cleared")
+    func testFilterResets() async {
+        // Given
+        let testUsers = [User.mock(name: "Alex Martinez", email: "alex@test.com"),
+                         User.mock(name: "Raul Alonso", email: "raul@test.com")]
+        let container = PreviewContainer(users: testUsers)
+        let sut = container.makeUsersViewModel()
+        await sut.fetchUsers()
+        sut.searchText = "Alex"
+        #expect(sut.filteredUsers.count == 1)
+        
+        // When
+        sut.searchText = ""
+        
+        // Then
+        #expect(sut.filteredUsers.count == 2)
+    }
+    
+    @Test("Filtering logic reacts to BlacklistStore changes")
+    func testFilteringWithBlacklist() async {
+        // Given
+        let testUsers = [User.mock(id: "1"), User.mock(id: "2")]
+        let container = PreviewContainer(users: testUsers)
+        let sut = container.makeUsersViewModel()
+        await sut.fetchUsers()
+        
+        // When
+        container.blacklistStore.add(testUsers.first!)
+        
+        // Then
+        #expect(sut.filteredUsers.count == 1)
+        #expect(sut.filteredUsers.first?.id == "2")
     }
 }

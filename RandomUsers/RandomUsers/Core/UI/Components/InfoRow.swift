@@ -11,6 +11,7 @@ struct InfoRow: View {
     let icon: String
     let title: String
     let value: String
+    var url: URL? = nil
     
     var body: some View {
         HStack(spacing: 15) {
@@ -26,10 +27,17 @@ struct InfoRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 
-                Text(value)
-                    .font(.body)
-                    .foregroundStyle(.primary)
-                    .lineLimit(2)
+                if let url {
+                    Link(value, destination: url)
+                        .font(.body)
+                        .foregroundStyle(.blue)
+                        .lineLimit(2)
+                } else {
+                    Text(value)
+                        .font(.body)
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
+                }
             }
             
             Spacer()

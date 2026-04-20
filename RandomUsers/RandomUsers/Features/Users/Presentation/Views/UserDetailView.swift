@@ -62,11 +62,17 @@ struct UserDetailView: View {
     
     private var contactSection: some View {
         DetailCardView(title: "Contact Information") {
-            InfoRow(icon: "envelope.fill", title: "Email", value: user.email)
+            InfoRow(icon: "envelope.fill",
+                    title: "Email",
+                    value: user.email,
+                    url: URL(string: "mailto:\(user.email)"))
             
             Divider().padding(.leading, 40)
             
-            InfoRow(icon: "phone.fill", title: "Phone", value: user.phone)
+            InfoRow(icon: "phone.fill",
+                    title: "Phone",
+                    value: user.phone,
+                    url: URL(string: "tel:\(user.phone)"))
         }
     }
     

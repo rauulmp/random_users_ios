@@ -12,7 +12,7 @@ struct UsersRepositoryImpl: UsersRepository {
     private let client: RandomUsersClient
     private let seed: String
 
-    init(client: RandomUsersClient, seed: String = UUID().uuidString) {
+    init(client: RandomUsersClient, seed: String = "seed") {
         self.client = client
         self.seed = seed
     }

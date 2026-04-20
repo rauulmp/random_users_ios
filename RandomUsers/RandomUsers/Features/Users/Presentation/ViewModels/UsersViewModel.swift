@@ -16,27 +16,36 @@ class UsersViewModel {
     var paginationError: String?
     var hasMoreResults = true
     private var currentPage = 1
-    var searchText: String = ""
+    
+    private var searchTask: Task<Void, Never>?
+    var searchText: String = "" {
+        didSet { debounceSearch() }
+    }
+    private(set) var debouncedSearchText: String = ""
+    private let debounceDelay: UInt64
     
     var filteredUsers: [User] {
         guard case .success(let users) = state else { return [] }
         
         let blockedIds = Set(blacklistStore.users.map { $0.id })
         let activeUsers = users.filter { !blockedIds.contains($0.id) }
-        guard !searchText.isEmpty else { return activeUsers }
+        guard !debouncedSearchText.isEmpty else { return activeUsers }
         
         return activeUsers.filter { user in
-            user.name.localizedCaseInsensitiveContains(searchText) ||
-            user.email.localizedCaseInsensitiveContains(searchText)
+            user.name.localizedCaseInsensitiveContains(debouncedSearchText) ||
+            user.email.localizedCaseInsensitiveContains(debouncedSearchText)
         }
     }
     
     private let blacklistStore: BlacklistStore
     private let fetchUsersUseCase: FetchUsersUseCase
     
-    init(blacklistStore: BlacklistStore, fetchUsersUseCase: FetchUsersUseCase) {
+    init(blacklistStore: BlacklistStore,
+         fetchUsersUseCase: FetchUsersUseCase,
+         debounceDelay: UInt64 = 400_000_000) {
         self.blacklistStore = blacklistStore
         self.fetchUsersUseCase = fetchUsersUseCase
+        self.debounceDelay = debounceDelay
     }
     
     func fetchUsers(force: Bool = false, showLoading: Bool = true) async {
@@ -109,6 +118,19 @@ class UsersViewModel {
         
         for user in usersToDelete {
             blacklistStore.add(user)
+        }
+    }
+    
+    private func debounceSearch() {
+        searchTask?.cancel()
+        
+        let current = searchText
+        
+        searchTask = Task {
+            try? await Task.sleep(nanoseconds: debounceDelay)
+            if Task.isCancelled { return }
+            
+            debouncedSearchText = current
         }
     }
 }

@@ -25,7 +25,7 @@ struct UserListView: View {
                     } else if viewModel.filteredUsers.isEmpty {
                         ContentUnavailableView.search(text: viewModel.searchText)
                     } else {
-                        listView(users: viewModel.filteredUsers)
+                        listView
                     }
                 case .error(let message):
                     errorView(message: message)
@@ -85,9 +85,9 @@ struct UserListView: View {
         }
     }
     
-    private func listView(users: [User]) -> some View {
+    private var listView: some View {
         List{
-            ForEach(users) { user in
+            ForEach(viewModel.filteredUsers) { user in
                 NavigationLink(value: AppRoute.userDetail(user)) {
                     UserRowView(user: user)
                 }

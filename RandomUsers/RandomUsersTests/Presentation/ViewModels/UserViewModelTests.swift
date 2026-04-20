@@ -144,6 +144,7 @@ struct UsersViewModelTests {
         
         // When
         sut.searchText = "Alex"
+        try? await Task.sleep(for: .milliseconds(100))
         
         // Then
         #expect(sut.filteredUsers.count == 1)
@@ -161,6 +162,7 @@ struct UsersViewModelTests {
         
         // When
         sut.searchText = "alex"
+        try? await Task.sleep(for: .milliseconds(100))
         
         // Then
         #expect(sut.filteredUsers.count == 1)
@@ -178,6 +180,7 @@ struct UsersViewModelTests {
         
         // When
         sut.searchText = "alex@test"
+        try? await Task.sleep(for: .milliseconds(100))
         
         // Then
         #expect(sut.filteredUsers.count == 1)
@@ -194,6 +197,7 @@ struct UsersViewModelTests {
         
         // When
         sut.searchText = "NonExistentUser"
+        try? await Task.sleep(for: .milliseconds(100))
         
         // Then
         #expect(sut.filteredUsers.isEmpty)
@@ -208,10 +212,12 @@ struct UsersViewModelTests {
         let sut = container.makeUsersViewModel()
         await sut.fetchUsers()
         sut.searchText = "Alex"
+        try? await Task.sleep(for: .milliseconds(100))
         #expect(sut.filteredUsers.count == 1)
         
         // When
         sut.searchText = ""
+        try? await Task.sleep(for: .milliseconds(100))
         
         // Then
         #expect(sut.filteredUsers.count == 2)

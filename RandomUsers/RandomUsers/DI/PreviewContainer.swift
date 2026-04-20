@@ -37,7 +37,8 @@ final class PreviewContainer: DependencyFactory {
     func makeUsersViewModel() -> UsersViewModel {
         UsersViewModel(
             blacklistStore: blacklistStore,
-            fetchUsersUseCase: FetchUsersUseCaseImpl(repository: usersRepository)
+            fetchUsersUseCase: FetchUsersUseCaseImpl(repository: usersRepository),
+            debounceDelay: 0
         )
     }
 
